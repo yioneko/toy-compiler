@@ -30,11 +30,10 @@ void Lexer::skipComment() {
 
   while (!std::regex_search(peek, progText.end(), rightCommentRegex)) {
     // do not skip '\n'
+    const auto prePeek = peek;
     skipSpace(false);
-    if (peek == progText.end() || (++peek == progText.end())) {
-      return;
-    }
-    if ((*peek) == '\n') {
+    if ((*peek) == '\n' || peek == progText.end() ||
+        (prePeek == peek && ++peek == progText.end())) {
       throwLexerError("Unexpected unclosed comment", leftCommentIter);
     }
   }

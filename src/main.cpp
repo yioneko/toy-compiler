@@ -50,8 +50,9 @@ int main() {
   // length of file name can be at most 999
   char fileName[1000];
   scanf("%999s", fileName);
-  while (!freopen(fileName, "r", stdin)) {
-    printf("Failed to read file! Input correct file name again: ");
+  if (!freopen(fileName, "r", stdin)) {
+    printf("Failed to read file!");
+    return 1;
   }
 
   compile();
