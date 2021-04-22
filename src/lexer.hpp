@@ -6,8 +6,6 @@
 
 class Lexer {
 private:
-  typedef std::pair<std::smatch, Tokens> matchResult;
-
   std::map<std::string, unsigned> symbolTable;
   std::string::const_iterator peek;
   const std::string &progText;
@@ -15,11 +13,16 @@ private:
   unsigned curCol;
 
   void skipComment();
-  void skipSpace();
+  void skipSpace(bool skipEol);
+  void throwLexerError(const std::string &errorType,
+                       const std::string::const_iterator &pos) const;
+
+  typedef std::pair<std::smatch, Tokens> matchResult;
   matchResult tryMatchToken();
 
 public:
-  Lexer(const std::string &progText);
+  explicit Lexer(const std::string &progText);
+
   int getSymbolId(const std::string &symbol) const;
   void lexer(std::vector<Token> &parsedTokens);
 };

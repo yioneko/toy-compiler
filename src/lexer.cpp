@@ -3,15 +3,18 @@
 #include <cstdio>
 #include <stdexcept>
 
-Lexer::Lexer(const std::string &progText) : progText(progText) {
+Lexer::Lexer(const std::string &progText)
+    : progText(progText), curLine(1), curCol(1) {
   this->peek = this->progText.begin();
-  this->curLine = 1;
-  this->curCol = 1;
 }
 
-void Lexer::skipSpace() {
+void Lexer::skipSpace(bool skipEol = true) {
   while (isspace(*peek)) {
     if (*peek == '\n') {
+      if (!skipEol) {
+        return;
+      }
+
       ++curLine;
       curCol = 1;
     } else {
@@ -22,12 +25,17 @@ void Lexer::skipSpace() {
 }
 
 void Lexer::skipComment() {
+  const std::string::const_iterator leftCommentIter = peek;
   std::regex rightCommentRegex(tokenRegexps[Tokens::RightBlockComment]);
 
   while (!std::regex_search(peek, progText.end(), rightCommentRegex)) {
-    skipSpace();
+    // do not skip '\n'
+    skipSpace(false);
     if (peek == progText.end() || (++peek == progText.end())) {
       return;
+    }
+    if ((*peek) == '\n') {
+      throwLexerError("Unexpected unclosed comment", leftCommentIter);
     }
   }
 
@@ -36,7 +44,38 @@ void Lexer::skipComment() {
   curCol += 2;
 }
 
+void Lexer::throwLexerError(const std::string &errorType,
+                            const std::string::const_iterator &pos) const {
+  const unsigned maxExtraChars = 6;
+  unsigned actualBackwardChars;
+  auto bacIter = pos, forIter = pos + 1;
+
+  // search backward
+  for (actualBackwardChars = 0;
+       actualBackwardChars <= maxExtraChars && bacIter != progText.begin() &&
+       *(bacIter - 1) != '\n';
+       ++actualBackwardChars, --bacIter)
+    ;
+
+  // search forward
+  for (unsigned forwardChars = 0;
+       forIter != progText.end() && forwardChars <= maxExtraChars &&
+       (*forIter) != '\n' && (*forIter) != '\r'; // compatible for windows
+       ++forwardChars, ++forIter)
+    ;
+
+  throw std::runtime_error(
+      errorType + ": " + std::string(bacIter, forIter) + "\n" +
+      std::string(errorType.length() + actualBackwardChars + 2, ' ') +
+      "^ at line " + std::to_string(curLine) + ", col " +
+      std::to_string(curCol) + '.');
+};
+
 Lexer::matchResult Lexer::tryMatchToken() {
+  if (!std::regex_search(peek, progText.end(), std::regex(legalCharsRegexp))) {
+    throwLexerError("Detect illegal character", peek);
+  }
+
   std::smatch candidateMatch;
   Tokens candidateToken;
   for (unsigned tokenIndex = 0; tokenIndex < Tokens::TOKEN_CNT; ++tokenIndex) {
@@ -53,36 +92,16 @@ Lexer::matchResult Lexer::tryMatchToken() {
 
   // error
   if (candidateMatch.empty()) {
-    const unsigned maxExtraChars = 5;
-    unsigned actualBackwardChars;
-    auto bacIter = peek, forIter = peek + 1;
-
-    // search backward
-    for (actualBackwardChars = 0; actualBackwardChars <= maxExtraChars;
-         ++actualBackwardChars, --bacIter) {
-      if (bacIter == progText.begin() || isspace(*(bacIter - 1)))
-        break;
+    if ((*peek) == '\'') {
+      throwLexerError("Unexpected unclosed string literal", peek);
     }
 
-    // search forward
-    for (unsigned forwardChars = 0;
-         forIter != progText.end() && forwardChars <= maxExtraChars &&
-         !isspace(*forIter);
-         ++forwardChars, ++forIter)
-      ;
-
-    const std::string strBeforeWrongText = "No candidate token match for ";
-    throw std::runtime_error(
-        strBeforeWrongText + std::string(bacIter, forIter) + "\n" +
-        std::string(strBeforeWrongText.length() + actualBackwardChars, ' ') +
-        "^ at line " + std::to_string(curLine) + ", col " +
-        std::to_string(curCol) + '.');
+    throwLexerError("No candidate token match", peek);
   }
   return std::make_pair(candidateMatch, candidateToken);
 }
 
 void Lexer::lexer(std::vector<Token> &parsedTokens) {
-  // skip space
   bool errorOccurred = false;
   while (peek != progText.end()) {
     skipSpace();
@@ -90,9 +109,18 @@ void Lexer::lexer(std::vector<Token> &parsedTokens) {
     if (peek == progText.end())
       break;
 
-    matchResult ret;
+    std::smatch candidateMatch;
+    Tokens candidateToken;
     try {
-      ret = tryMatchToken();
+      matchResult ret = tryMatchToken();
+
+      candidateMatch = ret.first;
+      candidateToken = ret.second;
+
+      if (candidateToken == Tokens::LeftBlockComment) {
+        skipComment();
+        continue;
+      }
     } catch (const std::exception &e) {
       if (!errorOccurred) {
         errorOccurred = true;
@@ -101,14 +129,6 @@ void Lexer::lexer(std::vector<Token> &parsedTokens) {
       printf("%s\n", e.what());
       ++peek;
       ++curCol;
-      continue;
-    }
-
-    std::smatch candidateMatch = ret.first;
-    Tokens candidateToken = ret.second;
-
-    if (candidateToken == Tokens::LeftBlockComment) {
-      skipComment();
       continue;
     }
 

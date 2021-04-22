@@ -8,7 +8,7 @@ void readProgtext(std::string &progText) {
   }
 }
 
-void printTokens(Lexer &lexer, const std::vector<Token> &TokensVec) {
+void printTokens(const Lexer &lexer, const std::vector<Token> &TokensVec) {
   const unsigned tokenColumns = 5;
   const unsigned maxColumnWidth = 12;
 
@@ -45,5 +45,14 @@ void compile() {
 
 int main() {
   printf("============Welcome to toy compiler for SAMPLE============\n");
+  printf("Program file name(path): ");
+
+  // length of file name can be at most 999
+  char fileName[1000];
+  scanf("%999s", fileName);
+  while (!freopen(fileName, "r", stdin)) {
+    printf("Failed to read file! Input correct file name again: ");
+  }
+
   compile();
 }

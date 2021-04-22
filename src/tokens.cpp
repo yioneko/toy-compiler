@@ -60,7 +60,8 @@ std::vector<std::string> tokenRegexps{"^and",
                                       "^>=",
                                       "^\\[",
                                       "^\\]"};
+std::string legalCharsRegexp = "^[\\w+-=\\[\\])'\\(*/,.:;><]";
 
-Token::Token(Tokens type, const std::string lexeme, const unsigned line,
+Token::Token(Tokens type, const std::string& lexeme, const unsigned line,
              const unsigned col)
     : type(type), lexeme(lexeme), line(line), col(col) {}

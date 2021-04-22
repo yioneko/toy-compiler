@@ -69,13 +69,14 @@ enum Tokens {
 };
 
 extern std::vector<std::string> tokenRegexps;
+extern std::string legalCharsRegexp;
 
 struct Token {
   Tokens type;
   std::string lexeme;
   unsigned line;
   unsigned col;
-  Token(Tokens type, const std::string lexeme, const unsigned line,
+  Token(Tokens type, const std::string& lexeme, const unsigned line,
         const unsigned col);
 };
 
