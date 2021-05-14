@@ -20,13 +20,14 @@ void Lexer::skipSpace(bool skipEol = true) {
     } else {
       ++curCol;
     }
-    ++peek;
+    if (++peek == progText.end())
+      return;
   }
 }
 
 void Lexer::skipComment() {
   const std::string::const_iterator leftCommentIter = peek;
-  std::regex rightCommentRegex(tokenRegexps[Tokens::RightBlockComment]);
+  std::regex rightCommentRegex(tokenRegexps[RightBlockComment]);
 
   while (!std::regex_search(peek, progText.end(), rightCommentRegex)) {
     // do not skip '\n'
@@ -77,7 +78,7 @@ Lexer::matchResult Lexer::tryMatchToken() {
 
   std::smatch candidateMatch;
   Tokens candidateToken;
-  for (unsigned tokenIndex = 0; tokenIndex < Tokens::TOKEN_CNT; ++tokenIndex) {
+  for (unsigned tokenIndex = 0; tokenIndex < TOKEN_CNT; ++tokenIndex) {
     const std::string &regStr = tokenRegexps[tokenIndex];
 
     std::smatch match;
@@ -116,7 +117,7 @@ void Lexer::lexer(std::vector<Token> &parsedTokens) {
       candidateMatch = ret.first;
       candidateToken = ret.second;
 
-      if (candidateToken == Tokens::LeftBlockComment) {
+      if (candidateToken == LeftBlockComment) {
         skipComment();
         continue;
       }
@@ -132,9 +133,8 @@ void Lexer::lexer(std::vector<Token> &parsedTokens) {
     }
 
     const std::string lexeme = std::string(peek, candidateMatch[0].second);
-    if (candidateToken == Tokens::Identifier ||
-        candidateToken == Tokens::IntLIteral ||
-        candidateToken == Tokens::CharLiteral) {
+    if (candidateToken == Identifier || candidateToken == IntLIteral ||
+        candidateToken == CharLiteral) {
       if (!symbolTable.count(lexeme)) {
         symbolTable[lexeme] = symbolTable.size();
       }
