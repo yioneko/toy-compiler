@@ -2,8 +2,10 @@
 #define SYMBOLS_H
 
 #include "tokens.hpp"
+using std::string;
+using std::vector;
 
-enum Symbols {
+enum Symbols : unsigned {
   Terminals = TOKEN_CNT - 1,
   Expression,
   ArithmeticExpression,
@@ -28,8 +30,15 @@ enum Symbols {
   VariableDeclaration,
   Type,
   IdentifierTable,
-  SYMBOLS_CNT
+  StartSymbol,
+  None,
+  M,
+  N,
+  SYMBOLS_CNT,
+  Meaningless,
 };
+
+typedef unsigned symbol_t;
 
 struct Symbol {
   virtual Symbols getType() = 0;
@@ -44,86 +53,107 @@ struct Terminal : Symbol {
 
 struct Expression : Symbol {
   const static Symbols symbolType = Symbols::Expression;
+  string label;
   Symbols getType() override;
 };
 
 struct ArithmeticExpression : Symbol {
   const static Symbols symbolType = Symbols::ArithmeticExpression;
+  string label;
   Symbols getType() override;
 };
 
 struct BooleanExpression : Symbol {
   const static Symbols symbolType = Symbols::BooleanExpression;
+  vector<size_t> trueList;
+  vector<size_t> falseList;
   Symbols getType() override;
 };
 
 struct CharExpression : Symbol {
   const static Symbols symbolType = Symbols::CharExpression;
+  string label;
   Symbols getType() override;
 };
 
 struct Item : Symbol {
   const static Symbols symbolType = Symbols::Item;
+  string label;
   Symbols getType() override;
 };
 
 struct Factor : Symbol {
   const static Symbols symbolType = Symbols::Factor;
+  string label;
   Symbols getType() override;
 };
 
 struct ArithmeticUnit : Symbol {
   const static Symbols symbolType = Symbols::ArithmeticUnit;
+  string label;
   Symbols getType() override;
 };
 
 struct BooleanItem : Symbol {
   const static Symbols symbolType = Symbols::BooleanItem;
+  vector<size_t> trueList;
+  vector<size_t> falseList;
   Symbols getType() override;
 };
 
 struct BooleanFactor : Symbol {
   const static Symbols symbolType = Symbols::BooleanFactor;
+  vector<size_t> trueList;
+  vector<size_t> falseList;
   Symbols getType() override;
 };
 
 struct BooleanUnit : Symbol {
   const static Symbols symbolType = Symbols::BooleanUnit;
+  vector<size_t> trueList;
+  vector<size_t> falseList;
   Symbols getType() override;
 };
 
 struct RelationOperator : Symbol {
   const static Symbols symbolType = Symbols::RelationOperator;
+  string op;
   Symbols getType() override;
 };
 
 struct Statement : Symbol {
   const static Symbols symbolType = Symbols::Statement;
+  vector<size_t> nextList;
   Symbols getType() override;
 };
 
 struct Assignment : Symbol {
   const static Symbols symbolType = Symbols::Assignment;
+  vector<size_t> nextList;
   Symbols getType() override;
 };
 
 struct IfStatement : Symbol {
   const static Symbols symbolType = Symbols::IfStatement;
+  vector<size_t> nextList;
   Symbols getType() override;
 };
 
 struct WhileStatement : Symbol {
   const static Symbols symbolType = Symbols::WhileStatement;
+  vector<size_t> nextList;
   Symbols getType() override;
 };
 
 struct RepeatStatement : Symbol {
   const static Symbols symbolType = Symbols::RepeatStatement;
+  vector<size_t> nextList;
   Symbols getType() override;
 };
 
 struct CompoundStatement : Symbol {
   const static Symbols symbolType = Symbols::CompoundStatement;
+  const vector<size_t> nextList = {};
   Symbols getType() override;
 };
 
@@ -157,4 +187,20 @@ struct IdentifierTable : Symbol {
   Symbols getType() override;
 };
 
+struct M : Symbol {
+  const static Symbols symbolType = Symbols::M;
+  size_t instr;
+  Symbols getType() override;
+};
+
+struct N : Symbol {
+  const static Symbols symbolType = Symbols::M;
+  size_t instr;
+  Symbols getType() override;
+};
+
+struct StartSymbol : Symbol {
+  const static Symbols symbolType = Symbols::StartSymbol;
+  Symbols getType() override;
+};
 #endif

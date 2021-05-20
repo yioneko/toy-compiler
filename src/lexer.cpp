@@ -78,7 +78,7 @@ Lexer::matchResult Lexer::tryMatchToken() {
 
   std::smatch candidateMatch;
   Tokens candidateToken;
-  for (unsigned tokenIndex = 0; tokenIndex < TOKEN_CNT; ++tokenIndex) {
+  for (unsigned tokenIndex = 0; tokenIndex < TOKEN_CNT - 1; ++tokenIndex) {
     const std::string &regStr = tokenRegexps[tokenIndex];
 
     std::smatch match;

@@ -29,3 +29,6 @@ Symbols VariablePreamble::getType() { return symbolType; };
 Symbols VariableDeclaration::getType() { return symbolType; };
 Symbols Type::getType() { return symbolType; };
 Symbols IdentifierTable::getType() { return symbolType; };
+Symbols M::getType() { return symbolType; };
+Symbols N::getType() { return symbolType; };
+Symbols StartSymbol::getType() { return symbolType; };

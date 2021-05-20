@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-enum Tokens {
+enum Tokens : unsigned {
   AND,
   ARRAY,
   BEGIN,
@@ -65,6 +65,7 @@ enum Tokens {
   LargerEqual,
   LeftSquare,
   RightSquare,
+  EndInd,
   TOKEN_CNT
 };
 

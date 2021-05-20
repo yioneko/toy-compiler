@@ -1,4 +1,5 @@
 #include "lexer.hpp"
+#include "parser.hpp"
 #include <cstdio>
 
 void readProgtext(std::string &progText) {
@@ -39,6 +40,8 @@ void compile() {
   lexer.lexer(parsedTokens);
   printf("Parsed tokens: \n");
   printTokens(lexer, parsedTokens);
+
+  Parser parser(parsedTokens);
 
   exit(0);
 }
