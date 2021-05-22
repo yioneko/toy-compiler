@@ -18,7 +18,8 @@ private:
     std::shared_ptr<std::unordered_set<symbol_t>> lookAhead;
 
     explicit LALRItem(const Gram *const &production, unsigned dot = 1,
-                      std::unordered_set<symbol_t> *lookAhead = nullptr)
+                      std::unordered_set<symbol_t> *lookAhead =
+                          new std::unordered_set<symbol_t>)
         : production(production), dot(dot), lookAhead(lookAhead) {}
 
     struct Hash {
@@ -61,7 +62,7 @@ private:
       size_t operator()(const State &state) const;
     };
 
-    // ~State() ;
+    void print() const; // debug only
   };
 
   struct Action {
@@ -79,11 +80,11 @@ private:
   std::pair<State, SpontaneousSet> closure(const ItemSet &kernel) const;
   void calcGoto(const State &state, SpontaneousSet &spontaneousSet);
 
-  const vector<Token> &parsedTokens;
+  vector<shared_ptr<Terminal>> parsedTokens;
   vector<shared_ptr<Symbol>> parsedSymbols;
   std::stack<State> stateStk;
 
-  void throwSyntaxError() const;
+  void throwParserError(const std::string &errorType, const Token &token) const;
 
   friend class GramDef;
   GramDef gramDef;
@@ -94,6 +95,8 @@ private:
 public:
   explicit Parser(const std::vector<Token> &parsedTokens);
   void parse();
+  void printCode() const;
+  ~Parser();
 };
 
 #endif

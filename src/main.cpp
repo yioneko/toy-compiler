@@ -1,6 +1,7 @@
 #include "lexer.hpp"
 #include "parser.hpp"
 #include <cstdio>
+#include <stdexcept>
 
 void readProgtext(std::string &progText) {
   char c;
@@ -28,6 +29,7 @@ void printTokens(const Lexer &lexer, const std::vector<Token> &TokensVec) {
       putchar('\n');
     }
   }
+  putchar('\n');
 }
 
 void compile() {
@@ -40,19 +42,36 @@ void compile() {
   lexer.lexer(parsedTokens);
   printf("Parsed tokens: \n");
   printTokens(lexer, parsedTokens);
+  putchar('\n');
 
   Parser parser(parsedTokens);
+  bool errorOccurred = false;
+  try {
+    parser.parse();
+  } catch (const std::exception &e) {
+    if (!errorOccurred) {
+      errorOccurred = true;
+      puts("Error occurred during syntax analysis: ");
+    }
+    printf("%s\n", e.what());
+  }
+  printf("Generated intermediate code: \n");
+  parser.printCode();
 
   exit(0);
 }
 
 int main() {
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+  system("chcp 65001 >nul");
+#endif
   printf("============Welcome to toy compiler for SAMPLE============\n");
   printf("Program file name(path): ");
 
   // length of file name can be at most 999
   char fileName[1000];
   scanf("%999s", fileName);
+  // freopen("../tmp", "w", stdout);
   if (!freopen(fileName, "r", stdin)) {
     printf("Failed to read file!");
     return 1;

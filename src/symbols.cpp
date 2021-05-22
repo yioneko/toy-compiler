@@ -1,6 +1,6 @@
 #include "symbols.hpp"
 
-Terminal::Terminal(Token *const &token) : token(token) {}
+Terminal::Terminal(const Token &token) : token(token) {}
 
 // Too ugly! Perhaps someone who could provide
 // elegant scheme to override static field in the

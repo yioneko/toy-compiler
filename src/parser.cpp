@@ -2,10 +2,12 @@
 #include "gram.hpp"
 #include "tokens.hpp"
 #include <array>
+#include <cstdio>
 #include <queue>
 #include <stdexcept>
 #include <unordered_set>
 #include <vector>
+// #define DEBUG
 using std::unordered_set;
 using std::vector;
 
@@ -39,8 +41,6 @@ size_t Parser::LALRItem::Hash::operator()(const LALRItem &item) const {
   return ret;
 }
 
-// Parser::LALRItem::~LALRItem() { delete lookAhead; }
-
 size_t Parser::State::Hash::operator()(const State &state) const {
   using h = LALRItem::Hash;
   using unsignedHash = std::hash<unsigned>;
@@ -55,6 +55,44 @@ size_t Parser::State::Hash::operator()(const State &state) const {
 
   return ret;
 };
+
+void Parser::State::print() const {
+  printf("Kernel:\n");
+  for (size_t kernelIdx = 0; kernelIdx < kernel.size(); ++kernelIdx) {
+    auto &item = kernel[kernelIdx];
+    for (size_t i = 0; i < item.production->size(); ++i) {
+      printf("%d ", item.production->at(i));
+      if (item.dot == i + 1) {
+        printf("~ ");
+      }
+    }
+
+    printf("(");
+    bool fir = true;
+    for (auto &lh : *(item.lookAhead)) {
+      if (fir) {
+        printf("%d", lh);
+        fir = false;
+      } else {
+        printf(" %d", lh);
+      }
+    }
+    printf(")");
+    putchar('\n');
+  }
+  printf("Trival:\n");
+  for (size_t trivalIdx = 0; trivalIdx < trival.size(); ++trivalIdx) {
+    auto &item = trival[trivalIdx];
+    for (size_t i = 0; i < item.production->size(); ++i) {
+      printf("%d ", item.production->at(i));
+      if (item.dot == i + 1) {
+        printf("~ ");
+      }
+    }
+    putchar('\n');
+  }
+  putchar('\n');
+}
 
 bool Parser::isItemSetEql(const ItemSet &lhs, const ItemSet &rhs) {
   if (lhs.size() != rhs.size()) {
@@ -71,11 +109,11 @@ bool Parser::isItemSetEql(const ItemSet &lhs, const ItemSet &rhs) {
 }
 
 bool Parser::State::operator==(const State &rhs) const {
-  return isItemSetEql(kernel, rhs.kernel) && isItemSetEql(trival, rhs.trival);
+  return isItemSetEql(kernel,
+                      rhs.kernel) /*  && isItemSetEql(trival, rhs.trival) */;
 }
 
-Parser::Parser(const std::vector<Token> &parsedTokens)
-    : parsedTokens(parsedTokens), gramDef(this) {
+Parser::Parser(const std::vector<Token> &parsedTokens) : gramDef(this) {
   firstMemTable.resize(SYMBOLS_CNT);
   std::array<bool, SYMBOLS_CNT> firstVis;
 
@@ -114,7 +152,7 @@ Parser::Parser(const std::vector<Token> &parsedTokens)
       auto &item = state.kernel[kernelIdx];
       if (item.dot == item.production->size()) {
         for (auto &lh : *(item.lookAhead)) {
-          if (lh != Symbols::Meaningless) {
+          if (lh != Tokens::None) {
             insertAction(state, lh, new ReduceAction(*(item.production)));
           }
         }
@@ -122,26 +160,12 @@ Parser::Parser(const std::vector<Token> &parsedTokens)
     }
   }
 
-  for (auto &pir : actionTable) {
-    auto &state = pir.first;
-    for (size_t kernelIdx = 0; kernelIdx < state.kernel.size(); ++kernelIdx) {
-      auto &item = state.kernel[kernelIdx];
-      for (size_t i = 0; i < item.production->size(); ++i) {
-        if (item.dot == i) {
-          printf("~ ");
-        }
-        printf("%d ", item.production->at(i));
-      }
-
-      printf("(");
-      for (auto &lh : *(item.lookAhead)) {
-        printf("%d ", lh);
-      }
-      printf(")");
-      putchar('\n');
-    }
-    putchar('\n');
+  for (auto &token : parsedTokens) {
+    this->parsedTokens.emplace_back(new Terminal(token));
   }
+  this->parsedTokens.emplace_back(
+      new Terminal(Token(Tokens::EndInd, "", -1, -1)));
+
   // reserved for program declaration
   code.push_back({});
 }
@@ -154,7 +178,7 @@ const unordered_set<symbol_t> Parser::first(vector<symbol_t> &syms) const {
       break;
     }
     ret.insert(firstMemTable[sym].begin(), firstMemTable[sym].end());
-    if (!firstMemTable[sym].count(Symbols::None)) {
+    if (!firstMemTable[sym].count(Tokens::None)) {
       break;
     }
   }
@@ -177,7 +201,7 @@ Parser::recurFirst(symbol_t sym, std::array<bool, SYMBOLS_CNT> &firstVis) {
     unordered_set<symbol_t> nxtRecurFirst = recurFirst(prod->at(1), firstVis);
     ret.insert(nxtRecurFirst.begin(), nxtRecurFirst.end());
 
-    if (nxtRecurFirst.count(Symbols::None) && prod->size() > 2) {
+    if (nxtRecurFirst.count(Tokens::None) && prod->size() > 2) {
       nxtRecurFirst = recurFirst(prod->at(2), firstVis);
       ret.insert(nxtRecurFirst.begin(), nxtRecurFirst.end());
     }
@@ -191,8 +215,21 @@ void Parser::insertAction(const State &state, symbol_t symbol,
       actionTable[state][symbol] == nullptr) {
     actionTable[state][symbol] = action;
   } else {
-    throw new std::runtime_error("duplicate action");
-    // TODO: throw error
+#ifdef DEBUG
+    auto oldAction = actionTable[state][symbol];
+    if (!(oldAction->type == Action::ActionType::Reduce &&
+          action->type == Action::ActionType::Reduce &&
+          static_cast<const ReduceAction *>(oldAction)->production ==
+              static_cast<const ReduceAction *>(action)->production)) {
+      state.print();
+      for (auto &i : static_cast<const ReduceAction *>(action)->production) {
+        printf("%d ", i);
+      }
+      putchar('\n');
+      // throw std::runtime_error("duplicate action");
+    }
+#endif
+    delete action;
   }
 }
 
@@ -209,7 +246,6 @@ Parser::closure(const ItemSet &kernel) const {
     itemQueue.push(
         make_pair(LALRItem(item.production, item.dot), Symbols::Meaningless));
     propagationSet->at(kernelIdx).insert(item);
-    // nxtKernel[ItemWithHash{item}] = {Symbols::Meaningless};
   }
   unsigned kernelIdx = 0;
 
@@ -226,33 +262,43 @@ Parser::closure(const ItemSet &kernel) const {
       for (auto &prod : gramDef.getProduction(Symbols(nxtSymbol))) {
         LALRItem newItem(prod);
         vector<symbol_t> trailingSymbols(item.first.production->begin() +
-                                             item.first.dot,
+                                             item.first.dot + 1,
                                          item.first.production->end());
         trailingSymbols.push_back(item.second);
         auto newFirst = first(trailingSymbols);
-        auto visNewItemIter = spontaneousSet.find(LALRItem{newItem});
+        auto visNewItemIter = spontaneousSet.find(newItem);
 
         for (auto &lookAhead : newFirst) {
           if (lookAhead == Symbols::Meaningless) {
-            propagationSet->at(kernelIdx).insert(newItem);
+            if (kernelIdx >= kernel.size()) {
+              for (auto &progSet : *propagationSet) {
+                if (progSet.count(item.first)) {
+                  progSet.insert(newItem);
+                }
+              }
+            } else {
+              propagationSet->at(kernelIdx).insert(newItem);
+            }
           }
         }
         if (visNewItemIter == spontaneousSet.end()) {
-          (spontaneousSet[LALRItem{newItem}] =
-               unordered_set<symbol_t>(newFirst.begin(), newFirst.end()))
-              .erase(Symbols::Meaningless);
+          visNewItemIter =
+              spontaneousSet.insert(spontaneousSet.end(), {newItem, {}});
           trival.push_back(newItem);
-        } else {
-          for (auto &lookAhead : newFirst) {
-            if (!visNewItemIter->second.count(lookAhead)) {
-              visNewItemIter->second.insert(lookAhead);
-              itemQueue.push(make_pair(newItem, lookAhead));
-            }
+        }
+        for (auto &lookAhead : newFirst) {
+          if (!visNewItemIter->second.count(lookAhead)) {
+            visNewItemIter->second.insert(lookAhead);
+            itemQueue.push(make_pair(newItem, lookAhead));
           }
         }
       }
     }
     ++kernelIdx;
+  }
+
+  for (auto &pir : spontaneousSet) {
+    pir.second.erase(Symbols::Meaningless);
   }
 
   return make_pair(
@@ -278,9 +324,6 @@ void Parser::calcGoto(const State &state, SpontaneousSet &spontaneousSet) {
         if (sponLhIter != spontaneousSet.end()) {
           newItem.lookAhead = std::make_shared<unordered_set<symbol_t>>(
               unordered_set<symbol_t>(sponLhIter->second));
-        } else {
-          newItem.lookAhead =
-              shared_ptr<unordered_set<symbol_t>>(new unordered_set<symbol_t>);
         }
         newKernel.push_back(newItem);
       }
@@ -298,6 +341,13 @@ void Parser::calcGoto(const State &state, SpontaneousSet &spontaneousSet) {
         stateIter = actionTable.insert(
             actionTable.end(),
             make_pair(newState, vector<const Action *>(SYMBOLS_CNT, nullptr)));
+      } else {
+        for (size_t kernelIdx = 0; kernelIdx < stateIter->first.kernel.size();
+             ++kernelIdx) {
+          auto &lh = stateIter->first.kernel[kernelIdx].lookAhead;
+          lh->insert(newKernel[kernelIdx].lookAhead->begin(),
+                     newKernel[kernelIdx].lookAhead->end());
+        }
       }
 
       for (size_t kernelIdx = 0; kernelIdx < state.kernel.size(); ++kernelIdx) {
@@ -309,13 +359,90 @@ void Parser::calcGoto(const State &state, SpontaneousSet &spontaneousSet) {
         }
       }
 
-      insertAction(state, sym, new ShiftAction(newState));
+      insertAction(state, sym, new ShiftAction(stateIter->first));
       if (!visited)
         calcGoto(newState, closureRet.second);
     }
   }
 }
 
-void Parser::parse() {}
+void Parser::parse() {
+  stateStk.push(
+      closure({LALRItem(gramDef.getProduction(Symbols::StartSymbol)[0], 1,
+                        new unordered_set<symbol_t>{Tokens::EndInd})})
+          .first);
 
-void Parser::throwSyntaxError() const {};
+  for (size_t tokenIdx = 0; tokenIdx < parsedTokens.size();) {
+    auto &curState = stateStk.top();
+    bool tryNone = true;
+    auto nextAction = actionTable[curState][Tokens::None];
+    shared_ptr<Symbol> nextSymbol(
+        new Terminal(Token(Tokens::None, "", -1, -1)));
+    if (nextAction == nullptr ||
+        actionTable[static_cast<const ShiftAction *>(nextAction)->nextState]
+                   [parsedTokens[tokenIdx]->token.type] == nullptr) {
+      nextAction = actionTable[curState][parsedTokens[tokenIdx]->token.type];
+      tryNone = false;
+      nextSymbol = parsedTokens[tokenIdx];
+    }
+
+    if (nextAction == nullptr) {
+      throwParserError("Syntax error", parsedTokens[tokenIdx]->token);
+    }
+
+    if (nextAction->type == Action::ActionType::Reduce) {
+      auto &prod = static_cast<const ReduceAction *>(nextAction)->production;
+      nextSymbol = gramDef.getSementicAction(prod)(vector<shared_ptr<Symbol>>(
+          parsedSymbols.end() - prod.size() + 1, parsedSymbols.end()));
+      for (size_t i = 0; i < prod.size() - 1; ++i) {
+        parsedSymbols.pop_back();
+        stateStk.pop();
+      }
+
+      // finish
+      if (prod.at(0) == Symbols::StartSymbol) {
+        return;
+      }
+
+      nextAction = actionTable[stateStk.top()][nextSymbol->getType()];
+      tryNone = true;
+    }
+
+    if (nextAction == nullptr) {
+      throwParserError("Syntax error", parsedTokens[tokenIdx]->token);
+    }
+
+    if (nextAction->type == Action::ActionType::Shift) {
+      parsedSymbols.push_back(nextSymbol);
+      stateStk.push(static_cast<const ShiftAction *>(nextAction)->nextState);
+      if (!tryNone)
+        ++tokenIdx;
+    }
+  }
+}
+
+void Parser::throwParserError(const std::string &errorType,
+                              const Token &token) const {
+  throw std::runtime_error(errorType + " near '" + token.lexeme +
+                               "' at line " + std::to_string(token.line) +
+                               ", col " + std::to_string(token.col) + ".");
+};
+
+void Parser::printCode() const {
+  for (size_t lineNum = 0; lineNum < code.size(); ++lineNum) {
+    auto &line = code[lineNum];
+    printf("(%lu) (%s", lineNum, line[0].c_str());
+    for (size_t i = 1; i < line.size(); ++i) {
+      printf(", %s", line[i].c_str());
+    }
+    printf(")\n");
+  }
+}
+
+Parser::~Parser() {
+  for (auto &pir : actionTable) {
+    for (auto &action : pir.second) {
+      delete action;
+    }
+  }
+}

@@ -27,15 +27,19 @@ void Lexer::skipSpace(bool skipEol = true) {
 
 void Lexer::skipComment() {
   const std::string::const_iterator leftCommentIter = peek;
+  const unsigned leftCommentCol = curCol;
+  peek += 2;
+  curCol += 2;
   std::regex rightCommentRegex(tokenRegexps[RightBlockComment]);
 
-  while (!std::regex_search(peek, progText.end(), rightCommentRegex)) {
+  while (!std::regex_search(peek, progText.end(), rightCommentRegex, std::regex_constants::match_continuous)) {
     // do not skip '\n'
     const auto prePeek = peek;
     skipSpace(false);
     if ((*peek) == '\n' || peek == progText.end() ||
         (prePeek == peek && ++peek == progText.end())) {
-      throwLexerError("Unexpected unclosed comment", leftCommentIter);
+      throwLexerError("Unexpected unclosed comment", leftCommentIter, curLine,
+                      leftCommentCol);
     }
   }
 
@@ -45,7 +49,8 @@ void Lexer::skipComment() {
 }
 
 void Lexer::throwLexerError(const std::string &errorType,
-                            const std::string::const_iterator &pos) const {
+                            const std::string::const_iterator &pos,
+                            unsigned line, unsigned col) const {
   const unsigned maxExtraChars = 6;
   unsigned actualBackwardChars;
   auto bacIter = pos, forIter = pos + 1;
@@ -67,22 +72,22 @@ void Lexer::throwLexerError(const std::string &errorType,
   throw std::runtime_error(
       errorType + ": " + std::string(bacIter, forIter) + "\n" +
       std::string(errorType.length() + actualBackwardChars + 2, ' ') +
-      "^ at line " + std::to_string(curLine) + ", col " +
-      std::to_string(curCol) + '.');
+      "^ at line " + std::to_string(line) + ", col " + std::to_string(col) +
+      '.');
 };
 
 Lexer::matchResult Lexer::tryMatchToken() {
-  if (!std::regex_search(peek, progText.end(), std::regex(legalCharsRegexp))) {
-    throwLexerError("Detect illegal character", peek);
+  if (!std::regex_search(peek, progText.end(), std::regex(legalCharsRegexp),std::regex_constants::match_continuous)) {
+    throwLexerError("Detect illegal character", peek++, curLine, curCol++);
   }
 
   std::smatch candidateMatch;
   Tokens candidateToken;
-  for (unsigned tokenIndex = 0; tokenIndex < TOKEN_CNT - 1; ++tokenIndex) {
+  for (unsigned tokenIndex = 0; tokenIndex < TOKEN_CNT - 2; ++tokenIndex) {
     const std::string &regStr = tokenRegexps[tokenIndex];
 
     std::smatch match;
-    std::regex_search(peek, progText.end(), match, std::regex(regStr));
+    std::regex_search(peek, progText.end(), match, std::regex(regStr), std::regex_constants::match_continuous);
     if (candidateMatch.empty() ||
         match[0].length() > candidateMatch[0].length()) {
       candidateMatch = match;
@@ -92,11 +97,12 @@ Lexer::matchResult Lexer::tryMatchToken() {
 
   // error
   if (candidateMatch.empty()) {
-    if ((*peek) == '\'') {
-      throwLexerError("Unexpected unclosed string literal", peek);
+    if ((*(peek - 1)) == '\'') {
+      throwLexerError("Unexpected unclosed string literal", peek++, curLine,
+                      curCol++);
     }
 
-    throwLexerError("No candidate token match", peek);
+    throwLexerError("No candidate token match", peek++, curLine, curCol++);
   }
   return std::make_pair(candidateMatch, candidateToken);
 }
@@ -127,8 +133,6 @@ void Lexer::lexer(std::vector<Token> &parsedTokens) {
         printf("Error occurred during lexical analysis: \n");
       }
       printf("%s\n", e.what());
-      ++peek;
-      ++curCol;
       continue;
     }
 

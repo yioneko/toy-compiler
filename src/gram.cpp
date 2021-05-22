@@ -19,9 +19,6 @@ GramDef::GramDef(Parser *parser)
           {Gram{Symbols::Expression, Symbols::BooleanExpression},
            [](const vector<shared_ptr<Symbol>> &syms) {
              shared_ptr<struct Expression> Exp(new struct Expression);
-             //  Exp->label =
-             //      dynamic_pointer_cast<struct
-             //      BooleanExpression>(syms[0])->label;
              return dynamic_pointer_cast<Symbol>(Exp);
            }},
 
@@ -120,11 +117,8 @@ GramDef::GramDef(Parser *parser)
           {Gram{Symbols::ArithmeticUnit, Tokens::IntLIteral},
            [this](const vector<shared_ptr<Symbol>> &syms) {
              shared_ptr<struct ArithmeticUnit> arith(new struct ArithmeticUnit);
-             arith->label = newTemp();
-             emitCode(
-                 {":=",
-                  dynamic_pointer_cast<struct Terminal>(syms[0])->token->lexeme,
-                  "-", arith->label});
+             arith->label =
+                 dynamic_pointer_cast<struct Terminal>(syms[0])->token.lexeme;
              return dynamic_pointer_cast<Symbol>(arith);
            }},
 
@@ -132,7 +126,7 @@ GramDef::GramDef(Parser *parser)
            [](const vector<shared_ptr<Symbol>> &syms) {
              shared_ptr<struct ArithmeticUnit> arith(new struct ArithmeticUnit);
              arith->label =
-                 dynamic_pointer_cast<struct Terminal>(syms[0])->token->lexeme;
+                 dynamic_pointer_cast<struct Terminal>(syms[0])->token.lexeme;
              return dynamic_pointer_cast<Symbol>(arith);
            }},
 
@@ -146,10 +140,67 @@ GramDef::GramDef(Parser *parser)
              return dynamic_pointer_cast<Symbol>(arith);
            }},
 
-          {Gram{Symbols::M, Symbols::None},
+          {Gram{Symbols::M, Tokens::None},
            [this](const vector<shared_ptr<Symbol>> &) {
              shared_ptr<struct M> m(new struct M);
              m->instr = nextInstr();
+             m->symbolType = Symbols::M;
+             return dynamic_pointer_cast<Symbol>(m);
+           }},
+          {Gram{Symbols::M1, Tokens::None},
+           [this](const vector<shared_ptr<Symbol>> &) {
+             shared_ptr<struct M> m(new struct M);
+             m->instr = nextInstr();
+             m->symbolType = Symbols::M1;
+             return dynamic_pointer_cast<Symbol>(m);
+           }},
+          {Gram{Symbols::M2, Tokens::None},
+           [this](const vector<shared_ptr<Symbol>> &) {
+             shared_ptr<struct M> m(new struct M);
+             m->instr = nextInstr();
+             m->symbolType = Symbols::M2;
+             return dynamic_pointer_cast<Symbol>(m);
+           }},
+          {Gram{Symbols::M3, Tokens::None},
+           [this](const vector<shared_ptr<Symbol>> &) {
+             shared_ptr<struct M> m(new struct M);
+             m->instr = nextInstr();
+             m->symbolType = Symbols::M3;
+             return dynamic_pointer_cast<Symbol>(m);
+           }},
+          {Gram{Symbols::M4, Tokens::None},
+           [this](const vector<shared_ptr<Symbol>> &) {
+             shared_ptr<struct M> m(new struct M);
+             m->instr = nextInstr();
+             m->symbolType = Symbols::M4;
+             return dynamic_pointer_cast<Symbol>(m);
+           }},
+          {Gram{Symbols::M5, Tokens::None},
+           [this](const vector<shared_ptr<Symbol>> &) {
+             shared_ptr<struct M> m(new struct M);
+             m->instr = nextInstr();
+             m->symbolType = Symbols::M5;
+             return dynamic_pointer_cast<Symbol>(m);
+           }},
+          {Gram{Symbols::M6, Tokens::None},
+           [this](const vector<shared_ptr<Symbol>> &) {
+             shared_ptr<struct M> m(new struct M);
+             m->instr = nextInstr();
+             m->symbolType = Symbols::M6;
+             return dynamic_pointer_cast<Symbol>(m);
+           }},
+          {Gram{Symbols::M7, Tokens::None},
+           [this](const vector<shared_ptr<Symbol>> &) {
+             shared_ptr<struct M> m(new struct M);
+             m->instr = nextInstr();
+             m->symbolType = Symbols::M7;
+             return dynamic_pointer_cast<Symbol>(m);
+           }},
+          {Gram{Symbols::M8, Tokens::None},
+           [this](const vector<shared_ptr<Symbol>> &) {
+             shared_ptr<struct M> m(new struct M);
+             m->instr = nextInstr();
+             m->symbolType = Symbols::M8;
              return dynamic_pointer_cast<Symbol>(m);
            }},
 
@@ -168,18 +219,34 @@ GramDef::GramDef(Parser *parser)
              exp->falseList = b2->falseList;
              return dynamic_pointer_cast<Symbol>(exp);
            }},
+          {Gram{Symbols::BooleanExpression, Tokens::LeftBracket,
+                Symbols::BooleanExpression, Symbols::M, Tokens::OR,
+                Symbols::BooleanItem, Tokens::RightBracket},
+           [this](const vector<shared_ptr<Symbol>> &syms) {
+             shared_ptr<struct BooleanExpression> exp(
+                 new struct BooleanExpression);
+             auto b1 = dynamic_pointer_cast<struct BooleanExpression>(syms[1]);
+             auto b2 = dynamic_pointer_cast<struct BooleanItem>(syms[4]);
+             backPatch(b1->falseList,
+                       dynamic_pointer_cast<struct M>(syms[2])->instr);
+             exp->trueList = b1->trueList;
+             exp->trueList.insert(exp->trueList.end(), b2->trueList.begin(),
+                                  b2->trueList.end());
+             exp->falseList = b2->falseList;
+             return dynamic_pointer_cast<Symbol>(exp);
+           }},
 
           {Gram{Symbols::BooleanExpression, Symbols::BooleanItem},
            [](const vector<shared_ptr<Symbol>> &syms) {
              shared_ptr<struct BooleanExpression> exp(
                  new struct BooleanExpression);
-             auto b1 = dynamic_pointer_cast<struct BooleanExpression>(syms[0]);
+             auto b1 = dynamic_pointer_cast<struct BooleanItem>(syms[0]);
              exp->trueList = b1->trueList;
              exp->falseList = b1->falseList;
              return dynamic_pointer_cast<Symbol>(exp);
            }},
 
-          {Gram{Symbols::BooleanItem, Symbols::BooleanItem, Symbols::M,
+          {Gram{Symbols::BooleanItem, Symbols::BooleanItem, Symbols::M1,
                 Tokens::AND, Symbols::BooleanFactor},
            [this](const vector<shared_ptr<Symbol>> &syms) {
              shared_ptr<struct BooleanItem> item(new struct BooleanItem);
@@ -189,12 +256,71 @@ GramDef::GramDef(Parser *parser)
                        dynamic_pointer_cast<struct M>(syms[1])->instr);
              item->trueList = b2->trueList;
              item->falseList = b1->falseList;
-             item->falseList.insert(item->trueList.end(), b2->falseList.begin(),
-                                    b2->falseList.end());
+             item->falseList.insert(item->falseList.end(),
+                                    b2->falseList.begin(), b2->falseList.end());
+             return dynamic_pointer_cast<Symbol>(item);
+           }},
+          {Gram{Symbols::BooleanItem, Tokens::LeftBracket, Symbols::BooleanItem,
+                Symbols::M1, Tokens::AND, Symbols::BooleanFactor,
+                Tokens::RightBracket},
+           [this](const vector<shared_ptr<Symbol>> &syms) {
+             shared_ptr<struct BooleanItem> item(new struct BooleanItem);
+             auto b1 = dynamic_pointer_cast<struct BooleanItem>(syms[1]);
+             auto b2 = dynamic_pointer_cast<struct BooleanFactor>(syms[4]);
+             backPatch(b1->trueList,
+                       dynamic_pointer_cast<struct M>(syms[2])->instr);
+             item->trueList = b2->trueList;
+             item->falseList = b1->falseList;
+             item->falseList.insert(item->falseList.end(),
+                                    b2->falseList.begin(), b2->falseList.end());
              return dynamic_pointer_cast<Symbol>(item);
            }},
 
+          {Gram{Symbols::BooleanItem, Symbols::BooleanFactor},
+           [](const vector<shared_ptr<Symbol>> &syms) {
+             shared_ptr<struct BooleanItem> item(new struct BooleanItem);
+             auto b = dynamic_pointer_cast<struct BooleanFactor>(syms[0]);
+             item->trueList = b->trueList;
+             item->falseList = b->falseList;
+             return dynamic_pointer_cast<Symbol>(item);
+           }},
+
+          {Gram{Symbols::BooleanFactor, Tokens::NOT, Symbols::BooleanFactor},
+           [](const vector<shared_ptr<Symbol>> &syms) {
+             shared_ptr<struct BooleanFactor> factor(new struct BooleanFactor);
+             auto b = dynamic_pointer_cast<struct BooleanFactor>(syms[1]);
+             factor->trueList = b->falseList;
+             factor->falseList = b->trueList;
+             return dynamic_pointer_cast<Symbol>(factor);
+           }},
+          {Gram{Symbols::BooleanFactor, Tokens::LeftBracket, Tokens::NOT,
+                Symbols::BooleanFactor, Tokens::RightBracket},
+           [](const vector<shared_ptr<Symbol>> &syms) {
+             shared_ptr<struct BooleanFactor> factor(new struct BooleanFactor);
+             auto b = dynamic_pointer_cast<struct BooleanFactor>(syms[2]);
+             factor->trueList = b->falseList;
+             factor->falseList = b->trueList;
+             return dynamic_pointer_cast<Symbol>(factor);
+           }},
+
+          {Gram{Symbols::BooleanFactor, Symbols::BooleanUnit},
+           [](const vector<shared_ptr<Symbol>> &syms) {
+             shared_ptr<struct BooleanFactor> factor(new struct BooleanFactor);
+             auto b = dynamic_pointer_cast<struct BooleanUnit>(syms[0]);
+             factor->trueList = b->trueList;
+             factor->falseList = b->falseList;
+             return dynamic_pointer_cast<Symbol>(factor);
+           }},
+
           {Gram{Symbols::BooleanUnit, Tokens::TRUE},
+           [this](const vector<shared_ptr<Symbol>> &) {
+             shared_ptr<struct BooleanUnit> unit(new struct BooleanUnit);
+             unit->trueList = {nextInstr()};
+             emitCode({"j", "-", "-", "-"});
+             return dynamic_pointer_cast<Symbol>(unit);
+           }},
+          {Gram{Symbols::BooleanUnit, Tokens::LeftBracket, Tokens::TRUE,
+                Tokens::RightBracket},
            [this](const vector<shared_ptr<Symbol>> &) {
              shared_ptr<struct BooleanUnit> unit(new struct BooleanUnit);
              unit->trueList = {nextInstr()};
@@ -209,48 +335,57 @@ GramDef::GramDef(Parser *parser)
              emitCode({"j", "-", "-", "-"});
              return dynamic_pointer_cast<Symbol>(unit);
            }},
+          {Gram{Symbols::BooleanUnit, Tokens::LeftBracket, Tokens::FALSE,
+                Tokens::RightBracket},
+           [this](const vector<shared_ptr<Symbol>> &) {
+             shared_ptr<struct BooleanUnit> unit(new struct BooleanUnit);
+             unit->falseList = {nextInstr()};
+             emitCode({"j", "-", "-", "-"});
+             return dynamic_pointer_cast<Symbol>(unit);
+           }},
 
-          {Gram{Symbols::BooleanUnit, Tokens::Identifier},
+          {Gram{Symbols::BooleanUnit, Symbols::ArithmeticExpression},
            [this](const vector<shared_ptr<Symbol>> &syms) {
              shared_ptr<struct BooleanUnit> unit(new struct BooleanUnit);
              const string &id =
-                 dynamic_pointer_cast<struct Terminal>(syms[0])->token->lexeme;
+                 dynamic_pointer_cast<struct ArithmeticExpression>(syms[0])
+                     ->label;
              unit->trueList = {nextInstr()};
-             emitCode({"j<>", id, 0, "-"});
+             emitCode({"j<>", id, "0", "-"});
 
              unit->falseList = {nextInstr()};
              emitCode({"j", "-", "-", "-"});
              return dynamic_pointer_cast<Symbol>(unit);
            }},
 
-          {Gram{Symbols::BooleanUnit, Tokens::LeftBracket,
-                Symbols::BooleanExpression, Tokens::RightBracket},
-           [](const vector<shared_ptr<Symbol>> &syms) {
-             shared_ptr<struct BooleanUnit> unit(new struct BooleanUnit);
-             auto b1 = dynamic_pointer_cast<struct BooleanExpression>(syms[1]);
-             unit->trueList = b1->trueList;
-             unit->falseList = b1->falseList;
-             return dynamic_pointer_cast<Symbol>(unit);
-           }},
+          /*   {Gram{Symbols::BooleanUnit, Tokens::LeftBracket,
+                  Symbols::BooleanExpression, Tokens::RightBracket},
+             [](const vector<shared_ptr<Symbol>> &syms) {
+               shared_ptr<struct BooleanUnit> unit(new struct BooleanUnit);
+               auto b1 = dynamic_pointer_cast<struct
+             BooleanExpression>(syms[1]); unit->trueList = b1->trueList;
+               unit->falseList = b1->falseList;
+               return dynamic_pointer_cast<Symbol>(unit);
+             }}, */
+          /*
+                    {Gram{Symbols::BooleanUnit, Tokens::Identifier,
+                          Symbols::RelationOperator, Tokens::Identifier},
+                     [this](const vector<shared_ptr<Symbol>> &syms) {
+                       shared_ptr<struct BooleanUnit> unit(new struct
+             BooleanUnit); const string &id1 = dynamic_pointer_cast<struct
+             Terminal>(syms[0])->token.lexeme; const string &id2 =
+                           dynamic_pointer_cast<struct
+             Terminal>(syms[2])->token.lexeme; auto op =
+                           dynamic_pointer_cast<struct
+             RelationOperator>(syms[1])->op;
 
-          {Gram{Symbols::BooleanUnit, Tokens::Identifier,
-                Symbols::RelationOperator, Tokens::Identifier},
-           [this](const vector<shared_ptr<Symbol>> &syms) {
-             shared_ptr<struct BooleanUnit> unit(new struct BooleanUnit);
-             const string &id1 =
-                 dynamic_pointer_cast<struct Terminal>(syms[0])->token->lexeme;
-             const string &id2 =
-                 dynamic_pointer_cast<struct Terminal>(syms[2])->token->lexeme;
-             auto op =
-                 dynamic_pointer_cast<struct RelationOperator>(syms[1])->op;
+                       unit->trueList = {nextInstr()};
+                       emitCode({"j" + op, id1, id2, "-"});
 
-             unit->trueList = {nextInstr()};
-             emitCode({"j" + op, id1, id2, "-"});
-
-             unit->falseList = {nextInstr()};
-             emitCode({"j", "-", "-", "-"});
-             return dynamic_pointer_cast<Symbol>(unit);
-           }},
+                       unit->falseList = {nextInstr()};
+                       emitCode({"j", "-", "-", "-"});
+                       return dynamic_pointer_cast<Symbol>(unit);
+                     }}, */
 
           {Gram{Symbols::BooleanUnit, Symbols::ArithmeticExpression,
                 Symbols::RelationOperator, Symbols::ArithmeticExpression},
@@ -264,6 +399,27 @@ GramDef::GramDef(Parser *parser)
                      ->label;
              auto op =
                  dynamic_pointer_cast<struct RelationOperator>(syms[1])->op;
+
+             unit->trueList = {nextInstr()};
+             emitCode({"j" + op, label1, label2, "-"});
+
+             unit->falseList = {nextInstr()};
+             emitCode({"j", "-", "-", "-"});
+             return dynamic_pointer_cast<Symbol>(unit);
+           }},
+          {Gram{Symbols::BooleanUnit, Tokens::LeftBracket,
+                Symbols::ArithmeticExpression, Symbols::RelationOperator,
+                Symbols::ArithmeticExpression, Tokens::RightBracket},
+           [this](const vector<shared_ptr<Symbol>> &syms) {
+             shared_ptr<struct BooleanUnit> unit(new struct BooleanUnit);
+             const string &label1 =
+                 dynamic_pointer_cast<struct ArithmeticExpression>(syms[1])
+                     ->label;
+             const string &label2 =
+                 dynamic_pointer_cast<struct ArithmeticExpression>(syms[3])
+                     ->label;
+             auto op =
+                 dynamic_pointer_cast<struct RelationOperator>(syms[2])->op;
 
              unit->trueList = {nextInstr()};
              emitCode({"j" + op, label1, label2, "-"});
@@ -381,15 +537,16 @@ GramDef::GramDef(Parser *parser)
              shared_ptr<struct Assignment> assign(new struct Assignment);
              emitCode(
                  {":=",
-                  dynamic_pointer_cast<struct Terminal>(syms[0])->token->lexeme,
-                  "-",
                   dynamic_pointer_cast<struct ArithmeticExpression>(syms[2])
-                      ->label});
+                      ->label,
+                  "-",
+                  dynamic_pointer_cast<struct Terminal>(syms[0])
+                      ->token.lexeme});
              return dynamic_pointer_cast<Symbol>(assign);
            }},
 
           {Gram{Symbols::IfStatement, Tokens::IF, Symbols::BooleanExpression,
-                Symbols::M, Tokens::THEN, Symbols::Statement},
+                Symbols::M2, Tokens::THEN, Symbols::Statement},
            [this](const vector<shared_ptr<Symbol>> &syms) {
              shared_ptr<struct IfStatement> ifSt(new struct IfStatement);
              backPatch(dynamic_pointer_cast<struct BooleanExpression>(syms[1])
@@ -405,7 +562,7 @@ GramDef::GramDef(Parser *parser)
              return dynamic_pointer_cast<Symbol>(ifSt);
            }},
 
-          {Gram{Symbols::N, Symbols::None},
+          {Gram{Symbols::N, Tokens::None},
            [this](const vector<shared_ptr<Symbol>> &) {
              shared_ptr<struct N> n(new struct N);
              n->instr = nextInstr();
@@ -414,15 +571,15 @@ GramDef::GramDef(Parser *parser)
            }},
 
           {Gram{Symbols::IfStatement, Tokens::IF, Symbols::BooleanExpression,
-                Symbols::M, Tokens::THEN, Symbols::Statement, Symbols::N,
-                Tokens::ELSE, Symbols::Statement},
+                Symbols::M2, Tokens::THEN, Symbols::Statement, Tokens::ELSE,
+                Symbols::N, Symbols::Statement},
            [this](const vector<shared_ptr<Symbol>> &syms) {
              shared_ptr<struct IfStatement> ifSt(new struct IfStatement);
              auto b = dynamic_pointer_cast<struct BooleanExpression>(syms[1]);
              backPatch(b->trueList,
                        dynamic_pointer_cast<struct M>(syms[2])->instr);
              backPatch(b->falseList,
-                       dynamic_pointer_cast<struct N>(syms[5])->instr);
+                       dynamic_pointer_cast<struct N>(syms[6])->instr + 1);
 
              auto stNext1 =
                  dynamic_pointer_cast<struct Statement>(syms[4])->nextList;
@@ -430,32 +587,32 @@ GramDef::GramDef(Parser *parser)
                  dynamic_pointer_cast<struct Statement>(syms[7])->nextList;
              ifSt->nextList = stNext1;
              ifSt->nextList.push_back(
-                 dynamic_pointer_cast<struct N>(syms[5])->instr);
+                 dynamic_pointer_cast<struct N>(syms[6])->instr);
              ifSt->nextList.insert(ifSt->nextList.end(), stNext2.begin(),
                                    stNext2.end());
              return dynamic_pointer_cast<Symbol>(ifSt);
            }},
 
-          {Gram{Symbols::WhileStatement, Symbols::M, Tokens::WHILE,
-                Symbols::BooleanExpression, Symbols::M, Tokens::DO,
+          {Gram{Symbols::WhileStatement, Tokens::WHILE, Symbols::M4,
+                Symbols::BooleanExpression, Tokens::DO, Symbols::M5,
                 Symbols::Statement},
            [this](const vector<shared_ptr<Symbol>> &syms) {
              shared_ptr<struct WhileStatement> whSt(new struct WhileStatement);
-             auto m1Addr = dynamic_pointer_cast<struct M>(syms[0])->instr;
+             auto m1Addr = dynamic_pointer_cast<struct M>(syms[1])->instr;
              auto b = dynamic_pointer_cast<struct BooleanExpression>(syms[2]);
              backPatch(
                  dynamic_pointer_cast<struct Statement>(syms[5])->nextList,
                  m1Addr);
              backPatch(b->trueList,
-                       dynamic_pointer_cast<struct M>(syms[3])->instr);
+                       dynamic_pointer_cast<struct M>(syms[4])->instr);
 
              whSt->nextList = b->falseList;
              emitCode({"j", "-", "-", std::to_string(m1Addr)});
              return dynamic_pointer_cast<Symbol>(whSt);
            }},
 
-          {Gram{Symbols::RepeatStatement, Symbols::M, Tokens::REPEAT,
-                Symbols::Statement, Symbols::M, Tokens::UNTIL,
+          {Gram{Symbols::RepeatStatement, Tokens::REPEAT, Symbols::M6,
+                Symbols::Statement, Tokens::UNTIL, Symbols::M7,
                 Symbols::BooleanExpression},
            [this](const vector<shared_ptr<Symbol>> &syms) {
              shared_ptr<struct RepeatStatement> reap(
@@ -463,9 +620,9 @@ GramDef::GramDef(Parser *parser)
              auto b = dynamic_pointer_cast<struct BooleanExpression>(syms[5]);
              backPatch(
                  dynamic_pointer_cast<struct Statement>(syms[2])->nextList,
-                 dynamic_pointer_cast<struct M>(syms[3])->instr);
+                 dynamic_pointer_cast<struct M>(syms[4])->instr);
              backPatch(b->falseList,
-                       dynamic_pointer_cast<struct M>(syms[0])->instr);
+                       dynamic_pointer_cast<struct M>(syms[1])->instr);
              reap->nextList = b->trueList;
              return dynamic_pointer_cast<Symbol>(reap);
            }},
@@ -478,13 +635,12 @@ GramDef::GramDef(Parser *parser)
              return dynamic_pointer_cast<Symbol>(st);
            }},
 
-          {Gram{Symbols::StatementTable, Symbols::Statement, Symbols::M,
-                Tokens::Semicolon, Symbols::StatementTable},
+          {Gram{Symbols::StatementTable, Symbols::StatementTable, Tokens::Semicolon, Symbols::Statement},
            [this](const vector<shared_ptr<Symbol>> &syms) {
              shared_ptr<struct StatementTable> st(new struct StatementTable);
-             backPatch(
+             /* backPatch(
                  dynamic_pointer_cast<struct Statement>(syms[0])->nextList,
-                 dynamic_pointer_cast<struct M>(syms[1])->instr);
+                  dynamic_pointer_cast<struct M>(syms[2])->instr);*/
              return dynamic_pointer_cast<Symbol>(st);
            }},
 
@@ -504,7 +660,7 @@ GramDef::GramDef(Parser *parser)
              shared_ptr<struct Program> prog(new struct Program);
              parser->code[0] = {
                  "program",
-                 dynamic_pointer_cast<struct Terminal>(syms[1])->token->lexeme,
+                 dynamic_pointer_cast<struct Terminal>(syms[1])->token.lexeme,
                  "-", "-"};
              emitCode({"sys", "-", "-", "-"});
              return dynamic_pointer_cast<Symbol>(prog);
@@ -535,15 +691,19 @@ GramDef::GramDef(Parser *parser)
              return dynamic_pointer_cast<Symbol>(declar);
            }},
 
-          {Gram{Symbols::VariablePreamble, Symbols::None},
+          {Gram{Symbols::VariablePreamble, Tokens::None},
            [](const vector<shared_ptr<Symbol>> &syms) {
              shared_ptr<struct VariablePreamble> preamble(
                  new struct VariablePreamble);
              return dynamic_pointer_cast<Symbol>(preamble);
            }},
 
-          {Gram{Symbols::IdentifierTable, Tokens::Identifier,
-                Symbols::IdentifierTable},
+          {Gram{
+               Symbols::IdentifierTable,
+               Symbols::IdentifierTable,
+               Tokens::Comma,
+               Tokens::Identifier,
+           },
            [](const vector<shared_ptr<Symbol>> &syms) {
              shared_ptr<struct IdentifierTable> table(
                  new struct IdentifierTable);

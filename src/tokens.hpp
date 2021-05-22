@@ -65,6 +65,7 @@ enum Tokens : unsigned {
   LargerEqual,
   LeftSquare,
   RightSquare,
+  None,
   EndInd,
   TOKEN_CNT
 };

@@ -15,7 +15,8 @@ private:
   void skipComment();
   void skipSpace(bool skipEol);
   void throwLexerError(const std::string &errorType,
-                       const std::string::const_iterator &pos) const;
+                       const std::string::const_iterator &pos, unsigned line,
+                       unsigned col) const;
 
   typedef std::pair<std::smatch, Tokens> matchResult;
   matchResult tryMatchToken();

@@ -31,8 +31,15 @@ enum Symbols : unsigned {
   Type,
   IdentifierTable,
   StartSymbol,
-  None,
   M,
+  M1,
+  M2,
+  M3,
+  M4,
+  M5,
+  M6,
+  M7,
+  M8,
   N,
   SYMBOLS_CNT,
   Meaningless,
@@ -45,8 +52,8 @@ struct Symbol {
 };
 
 struct Terminal : Symbol {
-  Token *token;
-  explicit Terminal(Token *const &token);
+  Token token;
+  explicit Terminal(const Token &token);
   const static Symbols symbolType = Symbols::Terminals;
   Symbols getType() override;
 };
@@ -188,13 +195,13 @@ struct IdentifierTable : Symbol {
 };
 
 struct M : Symbol {
-  const static Symbols symbolType = Symbols::M;
+  Symbols symbolType;
   size_t instr;
   Symbols getType() override;
 };
 
 struct N : Symbol {
-  const static Symbols symbolType = Symbols::M;
+  const static Symbols symbolType = Symbols::N;
   size_t instr;
   Symbols getType() override;
 };
