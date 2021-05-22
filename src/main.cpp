@@ -1,14 +1,9 @@
 #include "lexer.hpp"
 #include "parser.hpp"
 #include <cstdio>
+#include <fstream>
 #include <stdexcept>
-
-void readProgtext(std::string &progText) {
-  char c;
-  while ((c = getchar()) != EOF) {
-    progText += c;
-  }
-}
+#include <streambuf>
 
 void printTokens(const Lexer &lexer, const std::vector<Token> &TokensVec) {
   const unsigned tokenColumns = 5;
@@ -32,11 +27,8 @@ void printTokens(const Lexer &lexer, const std::vector<Token> &TokensVec) {
   putchar('\n');
 }
 
-void compile() {
+void compile(const std::string &progText) {
   std::vector<Token> parsedTokens;
-  std::string progText;
-
-  readProgtext(progText);
 
   Lexer lexer(progText);
   lexer.lexer(parsedTokens);
@@ -45,20 +37,14 @@ void compile() {
   putchar('\n');
 
   Parser parser(parsedTokens);
-  bool errorOccurred = false;
   try {
     parser.parse();
   } catch (const std::exception &e) {
-    if (!errorOccurred) {
-      errorOccurred = true;
-      puts("Error occurred during syntax analysis: ");
-    }
+    puts("Error occurred during syntax analysis: ");
     printf("%s\n", e.what());
   }
   printf("Generated intermediate code: \n");
   parser.printCode();
-
-  exit(0);
 }
 
 int main() {
@@ -72,10 +58,16 @@ int main() {
   char fileName[1000];
   scanf("%999s", fileName);
   // freopen("../tmp", "w", stdout);
-  if (!freopen(fileName, "r", stdin)) {
+  if (!fopen(fileName, "r")) {
     printf("Failed to read file!");
     return 1;
   }
+  std::ifstream file(fileName);
+  std::string progText((std::istreambuf_iterator<char>(file)),
+                       std::istreambuf_iterator<char>());
 
-  compile();
+  compile(progText);
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+  system("pause");
+#endif
 }

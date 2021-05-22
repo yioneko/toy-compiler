@@ -32,7 +32,8 @@ void Lexer::skipComment() {
   curCol += 2;
   std::regex rightCommentRegex(tokenRegexps[RightBlockComment]);
 
-  while (!std::regex_search(peek, progText.end(), rightCommentRegex, std::regex_constants::match_continuous)) {
+  while (!std::regex_search(peek, progText.end(), rightCommentRegex,
+                            std::regex_constants::match_continuous)) {
     // do not skip '\n'
     const auto prePeek = peek;
     skipSpace(false);
@@ -77,7 +78,8 @@ void Lexer::throwLexerError(const std::string &errorType,
 };
 
 Lexer::matchResult Lexer::tryMatchToken() {
-  if (!std::regex_search(peek, progText.end(), std::regex(legalCharsRegexp),std::regex_constants::match_continuous)) {
+  if (!std::regex_search(peek, progText.end(), std::regex(legalCharsRegexp),
+                         std::regex_constants::match_continuous)) {
     throwLexerError("Detect illegal character", peek++, curLine, curCol++);
   }
 
@@ -87,7 +89,8 @@ Lexer::matchResult Lexer::tryMatchToken() {
     const std::string &regStr = tokenRegexps[tokenIndex];
 
     std::smatch match;
-    std::regex_search(peek, progText.end(), match, std::regex(regStr), std::regex_constants::match_continuous);
+    std::regex_search(peek, progText.end(), match, std::regex(regStr),
+                      std::regex_constants::match_continuous);
     if (candidateMatch.empty() ||
         match[0].length() > candidateMatch[0].length()) {
       candidateMatch = match;

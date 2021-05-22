@@ -423,9 +423,9 @@ void Parser::parse() {
 
 void Parser::throwParserError(const std::string &errorType,
                               const Token &token) const {
-  throw std::runtime_error(errorType + " near '" + token.lexeme +
-                               "' at line " + std::to_string(token.line) +
-                               ", col " + std::to_string(token.col) + ".");
+  throw std::runtime_error(errorType + " near '" + token.lexeme + "' at line " +
+                           std::to_string(token.line) + ", col " +
+                           std::to_string(token.col) + ".");
 };
 
 void Parser::printCode() const {

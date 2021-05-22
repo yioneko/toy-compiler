@@ -635,12 +635,13 @@ GramDef::GramDef(Parser *parser)
              return dynamic_pointer_cast<Symbol>(st);
            }},
 
-          {Gram{Symbols::StatementTable, Symbols::StatementTable, Tokens::Semicolon, Symbols::Statement},
+          {Gram{Symbols::StatementTable, Symbols::Statement, Tokens::Semicolon,
+                Symbols::M8, Symbols::StatementTable},
            [this](const vector<shared_ptr<Symbol>> &syms) {
              shared_ptr<struct StatementTable> st(new struct StatementTable);
-             /* backPatch(
+             backPatch(
                  dynamic_pointer_cast<struct Statement>(syms[0])->nextList,
-                  dynamic_pointer_cast<struct M>(syms[2])->instr);*/
+                 dynamic_pointer_cast<struct M>(syms[2])->instr);
              return dynamic_pointer_cast<Symbol>(st);
            }},
 
